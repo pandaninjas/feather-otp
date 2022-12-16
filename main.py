@@ -31,9 +31,9 @@ def create_account(
         return None, None
 
 
-def sync_json_to_secret_file(json_data: "Dict[str, Dict[str, str]]") -> None:
+def sync_data(data: "Dict[str, Dict[str, str]]") -> None:
     secret_buf = io.BytesIO()
-    secret_buf.write(json.dumps(json_data).encode("utf-8"))
+    secret_buf.write(json.dumps(data).encode("utf-8"))
     secret_buf.seek(0)
     with open("secret", "wb") as f:
         pyAesCrypt.encryptStream(secret_buf, f, passw, BUFFER_SIZE)
@@ -63,12 +63,7 @@ if not os.path.exists("secret"):
     )
 
     json_data: "Dict[str, Dict[str, str]]" = {"account-store": {name: secret}}
-    secret_bytes = json.dumps(json_data).encode("utf-8")
-    buffer = io.BytesIO()
-    buffer.write(secret_bytes)
-    buffer.seek(0)
-    with open("secret", "wb") as f:
-        pyAesCrypt.encryptStream(buffer, f, passw, BUFFER_SIZE)
+    sync_data(json_data)
 else:
     secret_buf = io.BytesIO()
     passw = getpass.getpass("Enter your password: ")
@@ -120,7 +115,7 @@ while True:
         if not isinstance(secret, str) or not isinstance(name, str):
             continue
         json_data["account-store"][name] = secret
-        sync_json_to_secret_file(json_data)
+        sync_data(json_data)
     elif res == 3:
         list_accounts(json_data)
     elif res == 4:
