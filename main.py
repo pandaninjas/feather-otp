@@ -11,6 +11,8 @@ OPTION_TEXT = """Options:
 4: Exit
 """
 
+class QuitLoopException(Exception):
+    pass
 
 def create_account(
     quit: bool = False,
@@ -91,23 +93,28 @@ while True:
         res = get_int(OPTION_TEXT)
     if res == 1:
         list_accounts(json_data)
-        while True:
-            account = input("Which account do you want to display 2fa for? ")
-            try:
-                otp = pyotp.TOTP(json_data["account-store"][account])
-                break
-            except Exception:
-                print("No account exists")
         try:
             while True:
-                print(
-                    f"Discord 2fa token: {otp.now()}, {round(otp.interval - datetime.datetime.now().timestamp() % otp.interval, 1)} seconds left. (Ctrl+C to break out)",
-                    end="",
-                )
-                time.sleep(0.1)
-                print("\r", end="")
-        except KeyboardInterrupt:
-            print()
+                account = input("Which account do you want to display 2fa for? ")
+                if account in ["none", "quit"]:
+                    raise QuitLoopException()
+                try:
+                    otp = pyotp.TOTP(json_data["account-store"][account])
+                    break
+                except Exception:
+                    print("No account exists")
+            try:
+                while True:
+                    print(
+                        f"2fa token: {otp.now()}, {round(otp.interval - datetime.datetime.now().timestamp() % otp.interval, 1)} seconds left. (Ctrl+C to break out)",
+                        end="",
+                    )
+                    time.sleep(0.1)
+                    print("\r", end="")
+            except KeyboardInterrupt:
+                print()
+        except QuitLoopException:
+            continue
     elif res == 2:
         secret, name = create_account()
         if not isinstance(secret, str) or not isinstance(name, str):
