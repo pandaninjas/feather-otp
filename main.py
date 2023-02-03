@@ -44,7 +44,8 @@ def get_int(prompt: str) -> "Optional[int]":
         return int(input(prompt))
     except ValueError:
         return None
-
+    except (EOFError, KeyboardInterrupt):
+        exit(0)
 
 def list_accounts(data: "Dict[str, Dict[str, str]]") -> None:
     print("Account list:")
