@@ -8,7 +8,8 @@ OPTION_TEXT = """Options:
 1: Choose account to display 2fa for
 2: Add more 2fa accounts
 3: List all accounts
-4: Exit
+4: Change password
+5: Exit
 """
 
 class QuitLoopException(Exception):
@@ -31,12 +32,12 @@ def create_account(
         return None, None
 
 
-def sync_data(data: "Dict[str, Dict[str, str]]") -> None:
+def sync_data(data: "Dict[str, Dict[str, str]]", passwd: str) -> None:
     secret_buf = io.BytesIO()
     secret_buf.write(json.dumps(data).encode("utf-8"))
     secret_buf.seek(0)
     with open("secret", "wb") as f:
-        pyAesCrypt.encryptStream(secret_buf, f, passw, BUFFER_SIZE)
+        pyAesCrypt.encryptStream(secret_buf, f, passwd, BUFFER_SIZE)
 
 
 def get_int(prompt: str) -> "Optional[int]":
@@ -84,7 +85,7 @@ else:
 
 while True:
     res = get_int(OPTION_TEXT)
-    while res not in [1, 2, 3, 4]:
+    while res not in [1, 2, 3, 4, 5]:
         print("Invalid option")
         res = get_int(OPTION_TEXT)
     if res == 1:
@@ -116,9 +117,20 @@ while True:
         if not isinstance(secret, str) or not isinstance(name, str):
             continue
         json_data["account-store"][name] = secret
-        sync_data(json_data)
+        sync_data(json_data, passw)
     elif res == 3:
         list_accounts(json_data)
     elif res == 4:
+        old = getpass.getpass("Enter your old password: ")
+        if old != passw:
+            print("Incorrect password")
+        else:
+            passw = getpass.getpass("Enter your new password: ")
+            verify = getpass.getpass("Enter your new password again: ")
+            if passw != verify:
+                print("Passwords do not match")
+                continue
+            sync_data(json_data, passw)
+    elif res == 5:
         print("Exiting...")
         exit()
